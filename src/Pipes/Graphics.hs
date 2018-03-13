@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 
-module Lib where
+module Pipes.Graphics where
 
 import Codec.FFmpeg
 import Codec.Picture
@@ -16,15 +16,6 @@ import Linear
 
 import Pipes
 import Pipes.Safe
-
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
-
-testProducer :: MonadSafe m => Producer' String m ()
-testProducer = liftIO (print "dog") >> yield "dogs" `finally` (liftIO $ print "cats")
-
-testConsumer :: MonadSafe m => Consumer' String m ()
-testConsumer = (liftIO (print "llama") >> await >>= liftIO . print) `finally` (liftIO $ print "llamam")
 
 produceTestImage :: Int -> Int -> Word8 -> Image PixelRGB8
 produceTestImage ydim xdim w =
