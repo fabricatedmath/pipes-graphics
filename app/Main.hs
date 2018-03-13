@@ -1,8 +1,7 @@
 module Main where
 
-import Lib
-
 import Pipes
+import Pipes.Graphics
 import Pipes.Safe
 
 main :: IO ()
