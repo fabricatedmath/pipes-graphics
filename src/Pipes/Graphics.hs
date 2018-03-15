@@ -4,10 +4,11 @@ module Pipes.Graphics where
 
 import Codec.FFmpeg
 import Codec.Picture
+import Codec.Picture.Png
 import Control.Monad.Identity
 import Control.Monad.Trans
 
-import Data.Array.Repa
+import Data.Array.Repa hiding ((++))
 import Data.Vector (convert)
 import qualified Data.Vector.Storable as VS
 import Data.Word (Word8)
@@ -17,10 +18,12 @@ import Linear
 import Pipes
 import Pipes.Safe
 
+import Text.Printf
+
 produceTestImage :: Int -> Int -> Word8 -> Image PixelRGB8
 produceTestImage ydim xdim w =
   let
-    f (Z :. y :. x) = V3 w 0 0
+    f (Z :. y :. x) = V3 0 0 w
   in repaToImage $ runIdentity $ computeUnboxedP $ fromFunction (Z :. ydim :. xdim) f
 
 repaToImage :: Array U DIM2 (V3 Word8) -> Image PixelRGB8
@@ -49,11 +52,21 @@ data FFmpegOpts =
   , _ffmpegFilePath :: FilePath
   } deriving (Show, Read)
 
-ffmpegConsumer
+pngWriter :: MonadIO m => Int -> FilePath -> String -> Consumer' (Image PixelRGB8) m ()
+pngWriter numZeros fp prefix =
+  forM_ [(0::Int)..]
+  (\i ->
+      do
+        let fileName = printf (fp ++ "/" ++ prefix ++ "%0" ++ show numZeros ++ "d.png") i
+        image <- await
+        liftIO $ writePng fileName image
+  )
+
+ffmpegWriter
   :: (MonadSafe m, MonadIO m)
   => FFmpegOpts
   -> Consumer' (Image PixelRGB8) m ()
-ffmpegConsumer (FFmpegOpts w' h' fps fp) =
+ffmpegWriter (FFmpegOpts w' h' fps fp) =
   do
     let w = fromIntegral w'
         h = fromIntegral h'
