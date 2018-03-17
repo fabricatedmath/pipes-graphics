@@ -4,9 +4,8 @@ module Pipes.Graphics where
 
 import Codec.FFmpeg
 import Codec.Picture
-import Codec.Picture.Png
-import Control.Monad.Identity
-import Control.Monad.Trans
+import Control.Monad (forever, forM_)
+import Control.Monad.Trans (liftIO)
 
 import Data.Array.Repa hiding ((++))
 import Data.Vector (convert)
@@ -20,12 +19,6 @@ import Pipes.Safe
 
 import Text.Printf
 
-produceTestImage :: Int -> Int -> Word8 -> Image PixelRGB8
-produceTestImage ydim xdim w =
-  let
-    f (Z :. y :. x) = V3 0 0 w
-  in repaToImage $ runIdentity $ computeUnboxedP $ fromFunction (Z :. ydim :. xdim) f
-
 repaToImage :: Array U DIM2 (V3 Word8) -> Image PixelRGB8
 repaToImage arr =
   let
@@ -33,16 +26,6 @@ repaToImage arr =
     v = convert . toUnboxed $ arr :: VS.Vector (V3 Word8)
   in
     Image ydim xdim . VS.unsafeCast $ v
-
-imageProducer
-  :: Monad m
-  => Int
-  -> Int
-  -> Producer' (Image PixelRGB8) m ()
-imageProducer ydim xdim =
-  do
-    forM_ [0,0.1..10*pi] $
-      yield . produceTestImage ydim xdim . round . (*255) . abs . cos . (*(1/10/pi*2*pi))
 
 data FFmpegOpts =
   FFmpegOpts
@@ -52,12 +35,19 @@ data FFmpegOpts =
   , _ffmpegFilePath :: FilePath
   } deriving (Show, Read)
 
-pngWriter :: MonadIO m => Int -> FilePath -> String -> Consumer' (Image PixelRGB8) m ()
+pngWriter
+  :: MonadIO m
+  => Int
+  -> FilePath
+  -> String
+  -> Consumer' (Image PixelRGB8) m ()
 pngWriter numZeros fp prefix =
   forM_ [(0::Int)..]
   (\i ->
       do
-        let fileName = printf (fp ++ "/" ++ prefix ++ "%0" ++ show numZeros ++ "d.png") i
+        let
+          fileName =
+            printf (fp ++ "/" ++ prefix ++ "-%0" ++ show numZeros ++ "d.png") i
         image <- await
         liftIO $ writePng fileName image
   )
@@ -74,8 +64,8 @@ ffmpegWriter (FFmpegOpts w' h' fps fp) =
     let params =
           (defaultParams w h)
           {epFps = fps}
-    w <- liftIO $ imageWriter params fp
+    writer <- liftIO $ imageWriter params fp
     (forever $ do
         i <- await
-        liftIO $ w . Just $ i
-      ) `finally` (liftIO $ w Nothing)
+        liftIO $ writer . Just $ i
+      ) `finally` (liftIO $ writer Nothing)
