@@ -23,7 +23,7 @@ main =
         ffmpegOpts = FFmpegOpts 200 200 60 "test.mp4"
         c = ffmpegWriter ffmpegOpts
     runSafeT $ runEffect $ p >-> c
-    runSafeT $ runEffect $ p >-> pngWriter 3 "." "test"
+    runSafeT $ runEffect $ p >-> pngWriter 3 "test"
 
 testImageProducer
   :: Monad m

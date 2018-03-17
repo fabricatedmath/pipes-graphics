@@ -39,15 +39,14 @@ pngWriter
   :: MonadIO m
   => Int
   -> FilePath
-  -> String
   -> Consumer' (Image PixelRGB8) m ()
-pngWriter numZeros fp prefix =
+pngWriter numZeros fp =
   forM_ [(0::Int)..]
   (\i ->
       do
         let
           fileName =
-            printf (fp ++ "/" ++ prefix ++ "-%0" ++ show numZeros ++ "d.png") i
+            printf (fp ++ "-%0" ++ show numZeros ++ "d.png") i
         image <- await
         liftIO $ writePng fileName image
   )
