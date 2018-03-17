@@ -1,3 +1,7 @@
 .stack-work/
 pipes-graphics.cabal
 *~
+*.bmp
+*.mp4
+*.png
+
