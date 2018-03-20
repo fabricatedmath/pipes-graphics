@@ -53,7 +53,8 @@ openGLConsumer (Z :. height :. width) =
     let s = Size (P.fromIntegral width) (P.fromIntegral height)
     window <- liftIO $ do
       _b <- G.init
-      mw@(Just window) <- G.createWindow width height "something" Nothing Nothing
+      mw@(Just window) <-
+        G.createWindow width height "something" Nothing Nothing
       G.makeContextCurrent mw
       G.setCursorInputMode window $ G.CursorInputMode'Hidden
       --G.setKeyCallback window $ Just keyCallback
@@ -98,9 +99,6 @@ toColor r g b =
     b' = P.fromIntegral b
   in Color3 b' g' r'
 
---word8OfFloat :: Exp Float -> Exp Word8
---word8OfFloat x = A.truncate (x * 255)
-
 pack8 :: Word8 -> Word8 -> Word8 -> Word8 -> Word32
 pack8 x y z w =
   P.fromIntegral w `B.shiftL` 24 .|.
@@ -118,6 +116,9 @@ pack8A e =
     A.fromIntegral b `A.shiftL` 16 A..|.
     A.fromIntegral g `A.shiftL` 8 A..|.
     A.fromIntegral r
+
+--word8OfFloat :: Exp Float -> Exp Word8
+--word8OfFloat x = A.truncate (x * 255)
 
 {-
 unpack8 :: Exp Word32 -> Exp (Word8, Word8, Word8, Word8)
