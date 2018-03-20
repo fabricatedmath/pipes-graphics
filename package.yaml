@@ -29,6 +29,10 @@ dependencies:
 - linear
 - JuicyPixels
 - vector
+- OpenGL
+- GLFW-b
+- accelerate
+- accelerate-io
 
 library:
   source-dirs: src
