@@ -33,6 +33,8 @@ dependencies:
 - GLFW-b
 - accelerate
 - accelerate-io
+- primitive
+- linear-accelerate
 
 library:
   source-dirs: src

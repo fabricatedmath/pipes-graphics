@@ -5,7 +5,7 @@ module Main where
 import Codec.Picture
 import Codec.Picture.Png
 import Control.Concurrent (threadDelay)
-import Control.Monad (forM_)
+import Control.Monad (forM_, forever)
 import Control.Monad.Identity (runIdentity)
 
 import Data.Array.Accelerate as A
@@ -37,9 +37,9 @@ main =
         image' = testAccelerateImage' 100 100
         image = testAccelerateImage 100 100
         dim = A.Z A.:. 100 A.:. 100
-        consumer = openGLConsumer dim
-    writePng "dog.png" $ arrayToImage image'
-    runSafeT $ runEffect $ (yield image >> liftIO (threadDelay 2000000)) Pipes.>-> consumer
+        consumer = openGLConsumer' dim
+    --writePng "dog.png" $ arrayToImage image'
+    runSafeT $ runEffect $ forever (yield image' >> liftIO (threadDelay 1000000)) Pipes.>-> consumer
 
 {-
 accelerateToImage :: Array DIM2 (V3 Word8) -> Image PixelRGB8
