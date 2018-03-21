@@ -3,6 +3,7 @@
 module Pipes.Graphics where
 
 import Codec.FFmpeg
+import Codec.FFmpeg.Juicy
 import Codec.Picture
 import Control.Monad (forever, forM_)
 import Control.Monad.Trans (liftIO)
@@ -36,10 +37,10 @@ data FFmpegOpts =
   } deriving (Show, Read)
 
 pngWriter
-  :: MonadIO m
+  :: (PngSavable a, MonadIO m)
   => Int
   -> FilePath
-  -> Consumer' (Image PixelRGB8) m ()
+  -> Consumer' (Image a) m ()
 pngWriter numZeros fp =
   forM_ [(0::Int)..]
   (\i ->
@@ -52,9 +53,9 @@ pngWriter numZeros fp =
   )
 
 ffmpegWriter
-  :: (MonadSafe m, MonadIO m)
+  :: (JuicyPixelFormat a, MonadSafe m, MonadIO m)
   => FFmpegOpts
-  -> Consumer' (Image PixelRGB8) m ()
+  -> Consumer' (Image a) m ()
 ffmpegWriter (FFmpegOpts w' h' fps fp) =
   do
     let w = fromIntegral w'

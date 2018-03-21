@@ -86,47 +86,8 @@ squaredDistanceShutoff =
 openGLConsumer
   :: (MonadSafe m, MonadIO m)
   => DIM2
-  -> Consumer' (Array DIM2 (Word8,Word8,Word8)) m ()
-openGLConsumer (Z :. height :. width) =
-  do
-    let s = Size (P.fromIntegral width) (P.fromIntegral height)
-    window <- liftIO $ do
-      _b <- G.init
-      mw@(Just window) <-
-        G.createWindow width height "something" Nothing Nothing
-      G.makeContextCurrent mw
-      G.setCursorInputMode window $ G.CursorInputMode'Hidden
-      G.setKeyCallback window $ Just keyCallback
-      GL.clearColor $= Color4 0 0 0 0
-      GL.shadeModel $= Flat
-      GL.rowAlignment Unpack $= 1
-      return window
-    let
-      go =
-        do
-          v <- process <$> await
-          close <- liftIO $
-            do
-              VS.unsafeWith v (drawPixels s . toData)
-              G.pollEvents
-              G.swapBuffers window
-              G.windowShouldClose window
-          unless close $ go
-    go
-      `finally`
-      liftIO
-      ( do
-          print "killing"
-          G.destroyWindow window
-          G.terminate
-          exitSuccess
-      )
-
-openGLConsumer'
-  :: (MonadSafe m, MonadIO m)
-  => DIM2
   -> Consumer' (Array DIM2 Word32) m ()
-openGLConsumer' (Z :. height :. width) =
+openGLConsumer (Z :. height :. width) =
   do
     let s = Size (P.fromIntegral width) (P.fromIntegral height)
     window <- liftIO $ do
@@ -147,7 +108,7 @@ openGLConsumer' (Z :. height :. width) =
           close <- liftIO $
             do
               clear [ColorBuffer]
-              process' s arr
+              process s arr
               GL.flush
               GL.finish
               G.swapBuffers window
@@ -160,7 +121,44 @@ openGLConsumer' (Z :. height :. width) =
       `finally`
       liftIO
       ( do
-          print "killing"
+          G.destroyWindow window
+          G.terminate
+          exitSuccess
+      )
+
+openGLConsumer'
+  :: (MonadSafe m, MonadIO m)
+  => DIM2
+  -> Consumer' (Array DIM2 (Word8,Word8,Word8)) m ()
+openGLConsumer' (Z :. height :. width) =
+  do
+    let s = Size (P.fromIntegral width) (P.fromIntegral height)
+    window <- liftIO $ do
+      _b <- G.init
+      mw@(Just window) <-
+        G.createWindow width height "something" Nothing Nothing
+      G.makeContextCurrent mw
+      G.setCursorInputMode window $ G.CursorInputMode'Hidden
+      G.setKeyCallback window $ Just keyCallback
+      GL.clearColor $= Color4 0 0 0 0
+      GL.shadeModel $= Flat
+      GL.rowAlignment Unpack $= 1
+      return window
+    let
+      go =
+        do
+          v <- process' <$> await
+          close <- liftIO $
+            do
+              VS.unsafeWith v (drawPixels s . toData)
+              G.pollEvents
+              G.swapBuffers window
+              G.windowShouldClose window
+          unless close $ go
+    go
+      `finally`
+      liftIO
+      ( do
           G.destroyWindow window
           G.terminate
           exitSuccess
@@ -171,18 +169,18 @@ keyCallback window key _scancode action _mods =
   when (key P.== G.Key'Escape P.&& action P.== G.KeyState'Pressed) $
   G.setWindowShouldClose window True
 
-process :: Array DIM2 (Word8,Word8,Word8) -> VS.Vector (Color3 GLubyte)
-process arr =
-  let ((((),bs),gs),rs) = toVectors arr
-  in VS.zipWith3 toColor rs gs bs
-
-process' :: Size -> Array DIM2 Word32 -> IO ()
-process' s arr =
+process :: Size -> Array DIM2 Word32 -> IO ()
+process s arr =
   let
     v = toVectors arr :: VS.Vector Word32
     v' = VS.map (\p -> let (r,g,b,_a) = unpack8 p in toColor r g b) v
   in
     VS.unsafeWith v' (drawPixels s . toData)
+
+process' :: Array DIM2 (Word8,Word8,Word8) -> VS.Vector (Color3 GLubyte)
+process' arr =
+  let ((((),bs),gs),rs) = toVectors arr
+  in VS.zipWith3 toColor rs gs bs
 
 toData :: Ptr (Color3 GLubyte) -> PixelData (Color3 GLubyte)
 toData = PixelData BGR UnsignedByte
@@ -235,7 +233,7 @@ unpack8 xyzw =
 
 unpackRGBVec :: Word32 -> V3 Word8
 unpackRGBVec xyzw =
-  let w = P.fromIntegral (xyzw `B.shiftR` 24)
+  let _w = P.fromIntegral (xyzw `B.shiftR` 24) :: Word32
       z = P.fromIntegral (xyzw `B.shiftR` 16)
       y = P.fromIntegral (xyzw `B.shiftR` 8)
       x = P.fromIntegral xyzw

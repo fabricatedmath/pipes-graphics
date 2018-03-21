@@ -40,9 +40,19 @@ library:
   source-dirs: src
 
 executables:
-  pipes-graphics-exe:
+  pipes-graphics-accelerate-exe:
     main:                Main.hs
-    source-dirs:         app
+    source-dirs:         app/accelerate
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - pipes-graphics
+
+  pipes-graphics-repa-exe:
+    main:                Main.hs
+    source-dirs:         app/repa
     ghc-options:
     - -threaded
     - -rtsopts
