@@ -2,7 +2,9 @@
 {-# LANGUAGE ViewPatterns #-}
 
 module Pipes.Graphics.Accelerate
-  (imageToArray, arrayToImage, openGLConsumer, openGLConsumer', pack8, packRGBTupA, packRGBVecA)
+  ( imageToArray, arrayToImage
+  , openGLConsumer, openGLConsumer', squaredDistanceShutoff
+  , pack8, packRGBTupA, packRGBVecA)
 where
 
 import Codec.Picture
@@ -21,6 +23,8 @@ import Foreign.Ptr
 
 import Graphics.Rendering.OpenGL as GL hiding (pixelMap)
 import qualified Graphics.UI.GLFW as G
+
+import Linear
 
 import Pipes
 import Pipes.Safe
@@ -46,6 +50,38 @@ arrayToImage arr =
     (Z :. ydim :. xdim) = arrayShape arr
     v = toVectors arr
   in Image ydim xdim . VS.unsafeCast $ v
+
+squaredDistance
+  :: Array DIM2 Word32
+  -> Array DIM2 Word32
+  -> Double
+squaredDistance arr1 arr2 =
+  let
+    v1 = toVectors arr1
+    v2 = toVectors arr2
+    d = VS.sum $ VS.zipWith
+        (\a b ->
+            let
+              a' = P.fromIntegral <$> unpackRGBVec a
+              b' = P.fromIntegral <$> unpackRGBVec b
+            in qd a' b'
+        ) v1 v2
+  in
+    d*d
+
+squaredDistanceShutoff
+  :: MonadIO m
+  => Pipe (Array DIM2 Word32) (Array DIM2 Word32) m ()
+squaredDistanceShutoff =
+  do
+    let
+      go arr1 =
+        do
+          arr2 <- await
+          liftIO $ print $ squaredDistance arr1 arr2
+          yield arr1
+          go arr2
+    await >>= go
 
 openGLConsumer
   :: (MonadSafe m, MonadIO m)
@@ -196,3 +232,12 @@ unpack8 xyzw =
       x = P.fromIntegral xyzw
   in
     (x,y,z,w)
+
+unpackRGBVec :: Word32 -> V3 Word8
+unpackRGBVec xyzw =
+  let w = P.fromIntegral (xyzw `B.shiftR` 24)
+      z = P.fromIntegral (xyzw `B.shiftR` 16)
+      y = P.fromIntegral (xyzw `B.shiftR` 8)
+      x = P.fromIntegral xyzw
+  in
+    V3 x y z
