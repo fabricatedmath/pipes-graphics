@@ -8,7 +8,7 @@ where
 import Codec.Picture
 import Codec.Picture.Types as J
 
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 
 import Data.Array.Accelerate as A
 import qualified Data.Array.Accelerate.Data.Bits as A
@@ -60,7 +60,7 @@ openGLConsumer (Z :. height :. width) =
         G.createWindow width height "something" Nothing Nothing
       G.makeContextCurrent mw
       G.setCursorInputMode window $ G.CursorInputMode'Hidden
-      --G.setKeyCallback window $ Just keyCallback
+      G.setKeyCallback window $ Just keyCallback
       GL.clearColor $= Color4 0 0 0 0
       GL.shadeModel $= Flat
       GL.rowAlignment Unpack $= 1
@@ -99,7 +99,7 @@ openGLConsumer' (Z :. height :. width) =
         G.createWindow width height "something" Nothing Nothing
       G.makeContextCurrent mw
       G.setCursorInputMode window $ G.CursorInputMode'Hidden
-      --G.setKeyCallback window $ Just keyCallback
+      G.setKeyCallback window $ Just keyCallback
       GL.clearColor $= Color4 0 0 0 0
       GL.shadeModel $= Flat
       GL.rowAlignment Unpack $= 1
@@ -130,18 +130,21 @@ openGLConsumer' (Z :. height :. width) =
           exitSuccess
       )
 
-
+keyCallback :: G.KeyCallback
+keyCallback window key _scancode action _mods =
+  when (key P.== G.Key'Escape P.&& action P.== G.KeyState'Pressed) $
+  G.setWindowShouldClose window True
 
 process :: Array DIM2 (Word8,Word8,Word8) -> VS.Vector (Color3 GLubyte)
 process arr =
   let ((((),bs),gs),rs) = toVectors arr
-  in VS.zipWith3 toColor bs gs rs
+  in VS.zipWith3 toColor rs gs bs
 
 process' :: Size -> Array DIM2 Word32 -> IO ()
 process' s arr =
   let
     v = toVectors arr :: VS.Vector Word32
-    v' = VS.map (\p -> let (r,g,b,_a) = unpack8 p in toColor b r g) v
+    v' = VS.map (\p -> let (r,g,b,_a) = unpack8 p in toColor r g b) v
   in
     VS.unsafeWith v' (drawPixels s . toData)
 
