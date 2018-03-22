@@ -5,7 +5,7 @@ module Pipes.Graphics where
 import Codec.FFmpeg
 import Codec.FFmpeg.Juicy
 import Codec.Picture
-import Control.Monad (forever, forM_)
+import Control.Monad (forever, forM_, unless, when)
 import Control.Monad.Trans (liftIO)
 
 import Data.Array.Repa hiding ((++))
@@ -35,6 +35,30 @@ data FFmpegOpts =
   , _ffmpegFps :: Int
   , _ffmpegFilePath :: FilePath
   } deriving (Show, Read)
+
+polynomialDecaySampler
+  :: Monad m
+  => Int --desired number of frames
+  -> Int --total consumed frames
+  -> Pipe a a m ()
+polynomialDecaySampler num' total' =
+  let
+      num = fromIntegral num' :: Double
+      total = fromIntegral total' :: Double
+      --order for which slope of f is exactly -1 at x = 0
+      --and slope is never less than -1
+      order = total / num :: Double
+      f :: Int -> Int
+      f x' = ceiling $ num/total**order*(-x + total)**order
+        where x = fromIntegral x'
+      go y x =
+        do
+          frame <- await
+          let y' = f x
+          when (y' < y) $ yield frame >> go (y-1) (x+1)
+          unless (x > total') $ go y' (x+1)
+  in
+    go (num'+1) 0
 
 pngWriter
   :: (PngSavable a, MonadIO m)

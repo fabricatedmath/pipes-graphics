@@ -35,6 +35,7 @@ dependencies:
 - accelerate-io
 - primitive
 - linear-accelerate
+- JuicyPixels-extra
 
 library:
   source-dirs: src

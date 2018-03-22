@@ -8,6 +8,7 @@ module Pipes.Graphics.Accelerate
 where
 
 import Codec.Picture
+import Codec.Picture.Extra (flipVertically)
 import Codec.Picture.Types as J
 
 import Control.Monad (unless, when)
@@ -49,7 +50,7 @@ arrayToImage arr =
   let
     (Z :. ydim :. xdim) = arrayShape arr
     v = toVectors arr
-  in Image ydim xdim . VS.unsafeCast $ v
+  in flipVertically $ Image xdim ydim . VS.unsafeCast $ v
 
 squaredDistance
   :: Array DIM2 Word32
@@ -89,7 +90,8 @@ openGLConsumer
   -> Consumer' (Array DIM2 Word32) m ()
 openGLConsumer (Z :. height :. width) =
   do
-    let s = Size (P.fromIntegral width) (P.fromIntegral height)
+    let
+      s = Size (P.fromIntegral width) (P.fromIntegral height)
     window <- liftIO $ do
       _b <- G.init
       mw@(Just window) <-
