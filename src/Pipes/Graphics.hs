@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Pipes.Graphics where
 
@@ -16,6 +17,7 @@ import Data.Word (Word8)
 import Linear
 
 import Pipes
+import qualified Pipes.Prelude as Pipes
 import Pipes.Safe
 
 import Text.Printf
@@ -35,6 +37,57 @@ data FFmpegOpts =
   , _ffmpegFps :: Int
   , _ffmpegFilePath :: FilePath
   } deriving (Show, Read)
+
+-- | Given the number of frames and total consumed frames, returns
+-- a function that computes the integral from to x**c
+polynomialIntegral
+  :: Int --desired number of frames
+  -> Int --total consumed frames
+  -> Double --power
+  -> (Int -> Int -> Double) --from -> to -> density
+polynomialIntegral n' total' c =
+  let
+    n = fromIntegral n'
+    total = fromIntegral total'
+    --multiplier such that integral 0 to n == total
+    y = (c+1)*total/(n**(c+1)) :: Double
+    integral :: Int -> Int -> Double
+    integral from' to' =
+      let
+        from = fromIntegral from'
+        to = fromIntegral to'
+      in y/(c+1)*(to**(c+1) - from**(c+1))
+  in integral
+
+-- | Creates a distribution such that the integral from 0 to n of x**c == total,
+-- it then samples from this distribution, dropping an amount of "frames" equal
+-- to the integer parts of the accumulated total
+-- the result is a decayed sampler that prefers "near" frames
+-- and sparsely samples "far" frames
+polynomialIntegralDecaySampler
+  :: forall a m. MonadIO m
+  => Int --desired number of frames
+  -> Int --total consumed frames
+  -> Double --power
+  -> Pipe a a m ()
+polynomialIntegralDecaySampler n total c =
+  let
+    integral = polynomialIntegral n (total-n) c
+    go :: MonadIO m => Double -> Int -> Pipe a a m ()
+    go accum x =
+      do
+        accum' <-
+          do
+            let accum' = accum + integral (pred x) x
+            if accum' > 1 then
+              do
+                let (i,frac) = properFraction accum'
+                forM_ ([(1::Int)..(i)]) $ const await
+                pure frac
+              else pure accum'
+        await >>= yield
+        go accum' (succ x)
+  in go 0 1 >-> Pipes.take n
 
 polynomialDecaySampler
   :: Monad m
