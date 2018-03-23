@@ -36,6 +36,8 @@ dependencies:
 - primitive
 - linear-accelerate
 - JuicyPixels-extra
+- directory
+- bytestring
 
 library:
   source-dirs: src

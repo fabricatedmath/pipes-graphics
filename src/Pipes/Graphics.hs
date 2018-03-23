@@ -3,6 +3,9 @@
 
 module Pipes.Graphics where
 
+import qualified Data.ByteString as BS
+import Data.List (isSuffixOf)
+
 import Codec.FFmpeg
 import Codec.FFmpeg.Juicy
 import Codec.Picture
@@ -19,7 +22,8 @@ import Linear
 import Pipes
 import qualified Pipes.Prelude as Pipes
 import Pipes.Safe
-
+import Prelude as P
+import System.Directory (listDirectory)
 import Text.Printf
 
 repaToImage :: Array U DIM2 (V3 Word8) -> Image PixelRGB8
@@ -90,6 +94,48 @@ polynomialIntegralDecaySampler n total c =
         go accum' (succ x)
   in go 0 1 >-> Pipes.take n
 {-# INLINABLE polynomialIntegralDecaySampler #-}
+
+pngLoaderRGB8
+  :: MonadIO m
+  => FilePath
+  -> Producer' (Image PixelRGB8) m ()
+pngLoaderRGB8 dir =
+  do
+    files <-
+      liftIO $
+      P.map (\p -> dir ++ "/" ++ p) .
+      filter (isSuffixOf ".png") <$>
+      listDirectory dir
+    forM_ files
+      (\file ->
+         do
+           bytes <- liftIO $ BS.readFile file
+           case decodePng bytes of
+             Left s -> liftIO $ putStrLn s
+             Right (ImageRGB8 i) -> yield i
+             Right _ -> liftIO $ putStrLn "image type not supported"
+      )
+
+pngLoaderRGBA8
+  :: MonadIO m
+  => FilePath
+  -> Producer' (Image PixelRGBA8) m ()
+pngLoaderRGBA8 dir =
+  do
+    files <-
+      liftIO $
+      P.map (\p -> dir ++ "/" ++ p) .
+      filter (isSuffixOf ".png") <$>
+      listDirectory dir
+    forM_ files
+      (\file ->
+         do
+           bytes <- liftIO $ BS.readFile file
+           case decodePng bytes of
+             Left s -> liftIO $ putStrLn s
+             Right (ImageRGBA8 i) -> yield i
+             Right _ -> liftIO $ putStrLn "image type not supported"
+      )
 
 pngWriter
   :: (PngSavable a, MonadIO m)
