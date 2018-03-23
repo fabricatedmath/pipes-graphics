@@ -4,7 +4,7 @@
 module Pipes.Graphics where
 
 import qualified Data.ByteString as BS
-import Data.List (isSuffixOf)
+import Data.List (isSuffixOf, sort)
 
 import Codec.FFmpeg
 import Codec.FFmpeg.Juicy
@@ -23,7 +23,7 @@ import Pipes
 import qualified Pipes.Prelude as Pipes
 import Pipes.Safe
 import Prelude as P
-import System.Directory (listDirectory)
+import System.Directory (createDirectoryIfMissing, listDirectory, copyFile)
 import Text.Printf
 
 repaToImage :: Array U DIM2 (V3 Word8) -> Image PixelRGB8
@@ -95,14 +95,47 @@ polynomialIntegralDecaySampler n total c =
   in go 0 1 >-> Pipes.take n
 {-# INLINABLE polynomialIntegralDecaySampler #-}
 
-pngLoaderRGB8
+pngDirectoryLoader
   :: MonadIO m
-  => FilePath
-  -> Producer' (Image PixelRGB8) m ()
-pngLoaderRGB8 dir =
+  => FilePath --dir
+  -> Producer' FilePath m ()
+pngDirectoryLoader dir =
   do
     files <-
       liftIO $
+      sort .
+      P.map (\p -> dir ++ "/" ++ p) .
+      filter (isSuffixOf ".png") <$>
+      listDirectory dir
+    forM_ files yield
+
+fileCopier
+  :: MonadIO m
+  => Int --num zeros
+  -> FilePath --target dir/name
+  -> Consumer' FilePath m ()
+fileCopier numZeros target =
+  do
+    forM_ [(0::Int)..]
+      (\i ->
+         do
+           path <- await
+           let
+             suffix = reverse . fst . break (== '.') . reverse $ path
+             fileName =
+               printf (target ++ "-%0" ++ show numZeros ++ "d." ++ suffix) i
+           liftIO $ copyFile path fileName
+      )
+
+pngDirectoryLoaderRGB8
+  :: MonadIO m
+  => FilePath
+  -> Producer' (Image PixelRGB8) m ()
+pngDirectoryLoaderRGB8 dir =
+  do
+    files <-
+      liftIO $
+      sort .
       P.map (\p -> dir ++ "/" ++ p) .
       filter (isSuffixOf ".png") <$>
       listDirectory dir
@@ -116,14 +149,15 @@ pngLoaderRGB8 dir =
              Right _ -> liftIO $ putStrLn "image type not supported"
       )
 
-pngLoaderRGBA8
+pngDirectoryLoaderRGBA8
   :: MonadIO m
   => FilePath
   -> Producer' (Image PixelRGBA8) m ()
-pngLoaderRGBA8 dir =
+pngDirectoryLoaderRGBA8 dir =
   do
     files <-
       liftIO $
+      sort .
       P.map (\p -> dir ++ "/" ++ p) .
       filter (isSuffixOf ".png") <$>
       listDirectory dir
