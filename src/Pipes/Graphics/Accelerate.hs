@@ -35,6 +35,7 @@ import Prelude as P
 import System.Exit
 
 --TODO: More robust frame buffers (get rid of drawPixels, which is deprecated)
+--TODO: Make rgb8 instead of rgb8 to save image space
 
 imageToArray :: Image PixelRGBA8 -> Array DIM2 Word32
 imageToArray img =
