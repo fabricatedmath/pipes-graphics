@@ -58,6 +58,7 @@ polynomialIntegral n' total' c =
         to = fromIntegral to'
       in y/(c+1)*(to**(c+1) - from**(c+1))
   in integral
+{-# INLINABLE polynomialIntegral #-}
 
 -- | Creates a distribution such that the integral from 0 to n of x**c == total,
 -- it then samples from this distribution, dropping an amount of "frames" equal
@@ -88,30 +89,7 @@ polynomialIntegralDecaySampler n total c =
         await >>= yield
         go accum' (succ x)
   in go 0 1 >-> Pipes.take n
-
-polynomialDecaySampler
-  :: Monad m
-  => Int --desired number of frames
-  -> Int --total consumed frames
-  -> Pipe a a m ()
-polynomialDecaySampler num' total' =
-  let
-      num = fromIntegral num' :: Double
-      total = fromIntegral total' :: Double
-      --order for which slope of f is exactly -1 at x = 0
-      --and slope is never less than -1
-      order = total / num :: Double
-      f :: Int -> Int
-      f x' = ceiling $ num/total**order*(-x + total)**order
-        where x = fromIntegral x'
-      go y x =
-        do
-          frame <- await
-          let y' = f x
-          when (y' < y) $ yield frame >> go (y-1) (x+1)
-          unless (x > total') $ go y' (x+1)
-  in
-    go (num'+1) 0
+{-# INLINABLE polynomialIntegralDecaySampler #-}
 
 pngWriter
   :: (PngSavable a, MonadIO m)
