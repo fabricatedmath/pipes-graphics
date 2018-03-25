@@ -9,7 +9,7 @@ import Data.List (isSuffixOf, sort)
 import Codec.FFmpeg
 import Codec.FFmpeg.Juicy
 import Codec.Picture
-import Control.Monad (forever, forM_, unless, when)
+import Control.Monad (forever, forM_)
 import Control.Monad.Trans (liftIO)
 
 import Data.Array.Repa hiding ((++))
@@ -23,7 +23,7 @@ import Pipes
 import qualified Pipes.Prelude as Pipes
 import Pipes.Safe
 import Prelude as P
-import System.Directory (createDirectoryIfMissing, listDirectory, copyFile)
+import System.Directory (listDirectory, copyFile)
 import Text.Printf
 
 repaToImage :: Array U DIM2 (V3 Word8) -> Image PixelRGB8
@@ -32,7 +32,13 @@ repaToImage arr =
     (Z :. ydim :. xdim) = extent arr
     v = convert . toUnboxed $ arr :: VS.Vector (V3 Word8)
   in
-    Image ydim xdim . VS.unsafeCast $ v
+    Image xdim ydim $ VS.unsafeCast v
+
+imageToRepa :: Image PixelRGB8 -> Array U DIM2 (V3 Word8)
+imageToRepa (Image xdim ydim i) =
+  let
+    dim = Z :. ydim :. xdim
+  in fromUnboxed dim $ convert $ VS.unsafeCast i
 
 data FFmpegOpts =
   FFmpegOpts
@@ -145,37 +151,26 @@ pngDirectoryLoaderRGB8 dir =
            bytes <- liftIO $ BS.readFile file
            case decodePng bytes of
              Left s -> liftIO $ putStrLn s
-             Right (ImageRGB8 i) -> yield i
-             Right _ -> liftIO $ putStrLn "image type not supported"
+             Right i -> yield $ convertRGB8 i
       )
 
-pngDirectoryLoaderRGBA8
+pngFileLoader
   :: MonadIO m
-  => FilePath
-  -> Producer' (Image PixelRGBA8) m ()
-pngDirectoryLoaderRGBA8 dir =
+  => Pipe FilePath (Image PixelRGB8) m ()
+pngFileLoader =
+  forever $
   do
-    files <-
-      liftIO $
-      sort .
-      P.map (\p -> dir ++ "/" ++ p) .
-      filter (isSuffixOf ".png") <$>
-      listDirectory dir
-    forM_ files
-      (\file ->
-         do
-           bytes <- liftIO $ BS.readFile file
-           case decodePng bytes of
-             Left s -> liftIO $ putStrLn s
-             Right (ImageRGBA8 i) -> yield i
-             Right _ -> liftIO $ putStrLn "image type not supported"
-      )
+    path <- await
+    bytes <- liftIO $ BS.readFile path
+    case decodePng bytes of
+      Left s -> liftIO $ putStrLn s
+      Right i -> yield $ convertRGB8 i
 
 pngWriter
-  :: (PngSavable a, MonadIO m)
+  :: (MonadIO m)
   => Int
   -> FilePath
-  -> Consumer' (Image a) m ()
+  -> Consumer' (Image PixelRGB8) m ()
 pngWriter numZeros fp =
   forM_ [(0::Int)..]
   (\i ->

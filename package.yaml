@@ -38,6 +38,7 @@ dependencies:
 - JuicyPixels-extra
 - directory
 - bytestring
+- word24
 
 library:
   source-dirs: src

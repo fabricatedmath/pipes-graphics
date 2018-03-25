@@ -11,6 +11,8 @@ import Data.Function (on)
 
 import Data.Word (Word8)
 
+import Linear
+
 import Pipes
 import qualified Pipes.Prelude as Pipes (take)
 import Pipes.Graphics
@@ -49,7 +51,7 @@ main =
 testAccelerateImageProducer
   :: Monad m
   => DIM2
-  -> Producer' (Array DIM2 Word32) m ()
+  -> Producer' (Array DIM2 (V3 Word8)) m ()
 testAccelerateImageProducer dim =
   do
     forM_ ([0,0.01..] :: [Double]) $
@@ -60,12 +62,12 @@ testAccelerateImageProducer dim =
            yield $ testAccelerateImage dim b
       )
 
-testAccelerateImage :: DIM2 -> Word8 -> Array DIM2 Word32
+testAccelerateImage :: DIM2 -> Word8 -> Array DIM2 (V3 Word8)
 testAccelerateImage dim@(Z :. ydim :. xdim) b =
   fromFunction dim
   (\(Z :. y :. x) ->
       let
         y' = P.truncate . (*255) $ (((/) `on` P.fromIntegral) y ydim :: Float)
         x' = P.truncate . (*255) $ (((/) `on` P.fromIntegral) x xdim :: Float)
-      in pack8 y' x' b 255
+      in V3 y' x' b
   )
