@@ -13,7 +13,7 @@ import Codec.Picture.Types as J
 
 import Control.Monad (unless, when)
 
-import Data.Array.Accelerate as A
+import Data.Array.Accelerate as A hiding ((>->))
 import Data.Array.Accelerate.IO.Data.Vector.Storable
 import Data.Array.Accelerate.Linear.V3
 import Data.Bits as B

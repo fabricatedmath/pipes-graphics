@@ -120,9 +120,17 @@ fileCopier
   => Int --num zeros
   -> FilePath --target dir/name
   -> Consumer' FilePath m ()
-fileCopier numZeros target =
+fileCopier numZeros target = fileCopierFrom numZeros target 0
+
+fileCopierFrom
+  :: MonadIO m
+  => Int --num zeros
+  -> FilePath --target dir/name
+  -> Int
+  -> Consumer' FilePath m ()
+fileCopierFrom numZeros target from =
   do
-    forM_ [(0::Int)..]
+    forM_ [from..]
       (\i ->
          do
            path <- await
