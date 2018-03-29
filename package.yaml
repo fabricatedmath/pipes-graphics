@@ -33,7 +33,6 @@ dependencies:
 - GLFW-b
 - accelerate
 - accelerate-io
-- primitive
 - linear-accelerate
 - JuicyPixels-extra
 - directory
@@ -42,6 +41,8 @@ dependencies:
 
 library:
   source-dirs: src
+  ghc-options:
+  - -O2
 
 executables:
   pipes-graphics-accelerate-exe:
