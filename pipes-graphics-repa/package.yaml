@@ -1,6 +1,6 @@
-name:                pipes-graphics
+name:                pipes-graphics-repa
 version:             0.1.0.0
-github:              "fabricatedmath/pipes-graphics"
+github:              "fabricatedmath/pipes-graphics-repa"
 license:             BSD3
 author:              "Charles Durham"
 maintainer:          "fabricatedmath@gmail.com"
@@ -17,24 +17,31 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on Github at <https://github.com/fabricatedmath/pipes-graphics#readme>
+description:         Please see the README on Github at <https://github.com/fabricatedmath/pipes-graphics-repa#readme>
 
 dependencies:
 - base >= 4.7 && < 5
+- bytestring
+- directory
+- ffmpeg-light
+- linear
+- mtl
 - pipes
 - pipes-safe
-- ffmpeg-light
 - repa
-- mtl
-- linear
 - JuicyPixels
 - vector
-- OpenGL
-- GLFW-b
-- accelerate
-- accelerate-io
-- linear-accelerate
-- JuicyPixels-extra
-- directory
-- bytestring
-- word24
+
+library:
+  source-dirs: src
+
+executables:
+  pipes-graphics-repa-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - pipes-graphics-repa
