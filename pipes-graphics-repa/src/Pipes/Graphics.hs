@@ -115,6 +115,36 @@ pngDirectoryLoader dir =
       listDirectory dir
     forM_ files yield
 
+suffixDirectoryLoader
+  :: MonadIO m
+  => FilePath --dir
+  -> String --suffix
+  -> Producer' FilePath m ()
+suffixDirectoryLoader dir suffix =
+  do
+    files <-
+      liftIO $
+      sort .
+      P.map (\p -> dir ++ "/" ++ p) .
+      filter (isSuffixOf suffix) <$>
+      listDirectory dir
+    forM_ files yield
+
+suffixDirectoryLoaderReverse
+  :: MonadIO m
+  => FilePath --dir
+  -> String --suffix
+  -> Producer' FilePath m ()
+suffixDirectoryLoaderReverse dir suffix =
+  do
+    files <-
+      liftIO $
+      reverse . sort .
+      P.map (\p -> dir ++ "/" ++ p) .
+      filter (isSuffixOf suffix) <$>
+      listDirectory dir
+    forM_ files yield
+
 fileCopier
   :: MonadIO m
   => Int --num zeros
