@@ -43,15 +43,9 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - ffmpeg-light-0.12.0.1
-
-- git:    https://github.com/tmcdonell/accelerate.git
-  commit: c2946299193ac55547d51ff32abc3bfd9ad42d59
-
-- git:    https://github.com/tmcdonell/accelerate-io.git
-  commit: 6e2cbcc915310e6fed0dcfb7dc09fa497a2efe2a
-
-- git:    https://github.com/tmcdonell/linear-accelerate.git
-  commit: feaf458f4ecbebc33846420cf6f4cfcf9ea090c5
+- accelerate-1.2.0.0
+- accelerate-io-1.2.0.0
+- accelerate-linear-0.6.0.0
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
