@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-10.10
+resolver: lts-11.5
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -40,7 +40,8 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- ffmpeg-light-0.12.0.1
+- git: https://github.com/acowley/ffmpeg-light
+  commit: 74ea1f729a9530ceb06a25aba31951924c47d5d3
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

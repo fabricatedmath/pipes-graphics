@@ -23,6 +23,8 @@ dependencies:
 - base >= 4.7 && < 5
 - accelerate
 - accelerate-io
+- accelerate-llvm-native
+- accelerate-llvm-ptx
 - GLFW-b
 - linear
 - linear-accelerate
@@ -47,4 +49,3 @@ executables:
     dependencies:
     - pipes-graphics-accelerate
     - pipes-graphics-repa
-
