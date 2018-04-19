@@ -8,16 +8,13 @@ module Pipes.Graphics.Accelerate
 where
 
 import Codec.Picture
-import Codec.Picture.Types as J
 
 import Control.Monad (unless, when)
 
 import Data.Array.Accelerate as A hiding ((>->))
 import Data.Array.Accelerate.IO.Data.Vector.Storable
 import Data.Array.Accelerate.Linear.V3
-import Data.Bits as B
 import qualified Data.Vector.Storable as VS
-import Data.Word.Word24
 
 import Foreign.Ptr
 
